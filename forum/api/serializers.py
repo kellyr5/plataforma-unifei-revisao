@@ -7,7 +7,6 @@ from forum.models import (
 from forum.validators import (
     validar_tamanho_arquivo,
     validar_tipo_arquivo,
-    sanitizar_nome_arquivo,
 )
 
 

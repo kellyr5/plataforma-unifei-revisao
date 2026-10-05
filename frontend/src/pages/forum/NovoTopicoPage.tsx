@@ -27,6 +27,17 @@ interface Disciplina {
 
 const TAMANHO_MAXIMO = 10 * 1024 * 1024
 
+interface Parecida {
+  id: string
+  titulo: string
+  trecho: string
+  autor_nome: string
+  disciplina_codigo: string
+  topico_id: string
+  e_resposta: boolean
+  relevancia: number | null
+}
+
 function tamanhoLegivel(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
@@ -43,10 +54,15 @@ export default function NovoTopicoPage() {
   const [conteudo, setConteudo] = useState('')
   const [anexos, setAnexos] = useState<File[]>([])
   const [enviando, setEnviando] = useState(false)
+  const [parecidas, setParecidas] = useState<Parecida[]>([])
+  const [buscandoParecidas, setBuscandoParecidas] = useState(false)
 
   /* Quem leciona publica material e aviso; quem estuda tira dúvida. É a mesma
      estrutura de post, mas chamar tudo de dúvida soaria errado ao professor. */
   const ensina = !!user && (user.e_professor || user.e_coordenacao)
+
+  const buscaAtiva = !ensina && !!disciplina && titulo.trim().length >= 4
+  const listaParecidas = buscaAtiva ? parecidas : []
 
   useEffect(() => {
     /* Só as disciplinas em que a pessoa tem vínculo. Abrir dúvida numa turma
@@ -61,6 +77,35 @@ export default function NovoTopicoPage() {
       }))
     )
   }, [user])
+
+  /* Antes de publicar, procura dúvidas parecidas na mesma disciplina. Se a
+     pergunta já foi respondida, o aluno resolve sem esperar e a turma não
+     acumula duplicatas. A busca roda 500 ms depois da última tecla, e só a
+     resposta mais recente vale (o cancelamento evita mostrar resultado velho). */
+  useEffect(() => {
+    if (!buscaAtiva) return
+    const consulta = titulo.trim()
+
+    let cancelado = false
+    const temporizador = setTimeout(() => {
+      setBuscandoParecidas(true)
+      api.get('/busca/', { params: { q: consulta, disciplina, limite: 5 } })
+        .then(({ data }) => {
+          if (cancelado) return
+          const vistos = new Set<string>()
+          const unicas = (data.resultados as Parecida[]).filter(r => {
+            if (vistos.has(r.topico_id)) return false
+            vistos.add(r.topico_id)
+            return true
+          })
+          setParecidas(unicas)
+        })
+        .catch(() => { if (!cancelado) setParecidas([]) })
+        .finally(() => { if (!cancelado) setBuscandoParecidas(false) })
+    }, 500)
+
+    return () => { cancelado = true; clearTimeout(temporizador) }
+  }, [titulo, disciplina, buscaAtiva])
 
   function adicionarArquivos(lista: FileList | null) {
     if (!lista) return
@@ -197,6 +242,43 @@ export default function NovoTopicoPage() {
             className="outline-none"
           />
         </div>
+
+        {buscaAtiva && (listaParecidas.length > 0 || buscandoParecidas) && (
+          <div
+            role="region"
+            aria-label="Dúvidas parecidas"
+            style={{
+              padding: '14px 16px', borderRadius: '10px',
+              background: 'var(--accent-blue-soft)', border: '1px solid var(--accent-blue-border)',
+            }}
+          >
+            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--accent-blue-text)' }}>
+              {buscandoParecidas && listaParecidas.length === 0
+                ? 'Procurando dúvidas parecidas...'
+                : 'Alguém já perguntou algo parecido? Confira antes de publicar:'}
+            </div>
+            <ul style={{ listStyle: 'none', margin: '8px 0 0', padding: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {listaParecidas.map(r => (
+                <li key={r.id}>
+                  <a
+                    href={`/forum/${r.topico_id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ fontSize: '13px', fontWeight: 500, color: 'var(--accent-blue)', textDecoration: 'underline' }}
+                  >
+                    {r.titulo}
+                  </a>
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                    {r.trecho}
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '8px' }}>
+              Os links abrem em outra aba. Se nenhuma resolver, siga com a publicação.
+            </div>
+          </div>
+        )}
 
         <div>
           <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)' }}>

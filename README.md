@@ -47,35 +47,20 @@ A Plataforma UNIFEI centraliza as atividades acadêmicas dispersas entre SIGAA, 
 
 ```
 plataforma-unifei/
-├── backend/
-│   ├── core/                 # Configuração Django
-│   ├── apps/
-│   │   ├── forum/           # Módulo de fórum
-│   │   ├── group_work/      # Módulo de trabalhos em grupo
-│   │   ├── volunteering/    # Módulo de voluntariado
-│   │   ├── users/           # Gestão de usuários e roles
-│   │   └── notifications/   # Sistema de notificações
-│   ├── tests/               # Suite de testes automatizados
-│   ├── manage.py
-│   ├── requirements.txt
-│   └── Dockerfile
-├── frontend/
-│   ├── src/
-│   │   ├── components/      # Componentes React
-│   │   ├── pages/           # Páginas por role
-│   │   ├── services/        # Chamadas API
-│   │   ├── hooks/           # Custom hooks
-│   │   └── styles/          # TailwindCSS
-│   ├── vite.config.ts
-│   ├── package.json
-│   └── Dockerfile
-├── docker-compose.yml
-├── .env.example
-├── README.md
-└── docs/
-    ├── ARQUITETURA.md       # Diagrama ER atualizado
-    ├── API.md               # Documentação endpoints
-    └── DESENVOLVIMENTO.md   # Guia para contribuir
+├── config/            # Configurações Django, ASGI, permissões e fábricas de teste
+├── autenticacao/      # Usuário, primeiro acesso, perfis e comandos de carga
+├── forum/             # Disciplina, publicação, resposta, voto, denúncia e moderação
+├── colaboracao/       # Trabalhos, grupos, conversa, pedido de ajuda, canal da monitoria, acervo
+├── voluntariado/      # Oportunidades, inscrições e certificados
+├── notificacoes/      # Notificações e entrega por WebSocket
+├── busca/             # Índice vetorial e busca de dúvidas parecidas
+├── auditoria/         # Registro de ações sensíveis
+├── frontend/          # Aplicação React + TypeScript (Vite)
+├── deploy/            # Script de inicialização e guia de implantação
+├── docs/              # Estado do projeto, matriz curricular e roteiro de avaliação
+├── artigo/            # Texto do TCC em LaTeX
+├── Dockerfile         # Imagem única (build do React + Django/Daphne)
+└── render.yaml        # Blueprint de implantação no Render
 ```
 
 ---
@@ -83,50 +68,46 @@ plataforma-unifei/
 ## 🚀 Como Executar
 
 ### Pré-requisitos
-- Docker e Docker Compose
-- Node.js 18+ (se rodar frontend fora de container)
-- Python 3.10+ (se rodar backend fora de container)
+- Python 3.12, Node.js 22
+- PostgreSQL com a extensão `pgvector` (busca semântica opcional)
+- Redis (camada de canais do WebSocket; opcional em desenvolvimento)
 
-### Com Docker (Recomendado)
+### Desenvolvimento local
 
 ```bash
-# Clone o repositório
 git clone https://github.com/kellyr5/plataforma-unifei.git
 cd plataforma-unifei
 
-# Configure variáveis de ambiente
-cp .env.example .env
-# Edite .env com suas credenciais
-
-# Inicie os contêineres
-docker-compose up -d
-
-# Aplique migrações
-docker-compose exec backend python manage.py migrate
-
-# Crie superusuário
-docker-compose exec backend python manage.py createsuperuser
-
-# Acesse em http://localhost:3000 (frontend) e http://localhost:8000 (admin)
-```
-
-### Desenvolvimento Local
-
-#### Backend
-```bash
-cd backend
+# Backend
 python -m venv venv
-source venv/bin/activate  # No Windows: venv\Scripts\activate
+source venv/bin/activate        # No Windows: venv\Scripts\activate
 pip install -r requirements.txt
+cp .env.example .env            # preencha SECRET_KEY e as credenciais do banco
+python manage.py migrate
+python manage.py importar_matriz_ppc docs/ppc-cco.txt --curso CCO --nome "Ciencia da Computacao" --ano 2026
+python manage.py criar_perfis_demo --reset
+python manage.py popular_demonstracao
 python manage.py runserver
-```
 
-#### Frontend
-```bash
+# Frontend (outro terminal)
 cd frontend
-npm install
+npm ci
 npm run dev
 ```
+
+Para servir o build do React pelo próprio Django (sem o Vite), gere `npm run build`
+e inicie o servidor com `SERVIR_FRONTEND=true`.
+
+### Com Docker
+
+```bash
+docker build -t plataforma-unifei .
+docker run --env-file .env -p 8000:8000 plataforma-unifei
+```
+
+### Implantação
+
+Veja [`deploy/LEIA-ME.md`](deploy/LEIA-ME.md) e o blueprint [`render.yaml`](render.yaml).
 
 ---
 
@@ -136,8 +117,8 @@ npm run dev
 - ✓ Perguntas por disciplina/período
 - ✓ Votação de respostas
 - ✓ Marcação de melhor resposta
-- ✓ Busca semântica com embedding
-- ✓ Moderação por denúncia
+- ✓ Busca de dúvidas parecidas (semântica opcional) ao criar uma dúvida
+- ✓ Denúncia de conteúdo e fila de moderação
 
 ### Trabalhos em Grupo
 - ✓ Formação por escolha ou sorteio
@@ -156,15 +137,11 @@ npm run dev
 
 ## 🧪 Testes
 
-A suite de testes cobre permissões, privacidade e regras de negócio:
-
 ```bash
-cd backend
-python manage.py test
-
-# Com cobertura
-coverage run --source='.' manage.py test
-coverage report
+python manage.py test            # 227 testes
+python -m ruff check .           # lint do backend
+python docs/gerar-requisitos.py  # regenera as planilhas de RF/RNF (requer openpyxl)
+cd frontend && npx tsc -b        # tipos do frontend
 ```
 
 ---
@@ -180,38 +157,33 @@ coverage report
 | **Pendências** | | |
 | Validação UX | ⏳ Etapa final TCC | Testes com usuários reais (Seção 4.3) |
 | Documentação | ⏳ Em andamento | ER atualizado (26 tabelas), artigo em conclusão |
-| Branch main | ⚠️ Desatualizada | Mesclagem interrompida há 3 meses |
-
----
-
-## 🔄 Atualização Urgente
-
-**⚠️ Atenção:** A branch `main` no GitHub pode estar desatualizada. Os módulos de **Colaboração** e **Busca Semântica** podem não estar refletidos. Para ver o estado completo:
-
-```bash
-git branch -a
-git checkout develop  # ou outra branch ativa
-```
-
-Recomenda-se **completar a mesclagem** e fazer push da branch principal atualizada.
 
 ---
 
 ## 📚 Documentação
 
-- `docs/ARQUITETURA.md` — Diagrama ER atualizado, fluxos de dados
-- `docs/API.md` — Endpoints REST com exemplos
-- `docs/DESENVOLVIMENTO.md` — Guia de contribuição, padrões de código
-- Admin Django — Em `http://localhost:8000/admin/` (superusuário)
+- [`docs/estado-do-projeto.md`](docs/estado-do-projeto.md) — decisões de projeto e estado atual
+- [`docs/Requisitos_Funcionais_Plataforma_UNIFEI.xlsx`](docs/Requisitos_Funcionais_Plataforma_UNIFEI.xlsx) e [`docs/Requisitos_Não_Funcionais_Plataforma_UNIFEI.xlsx`](docs/Requisitos_N%C3%A3o_Funcionais_Plataforma_UNIFEI.xlsx) — 86 requisitos funcionais e 51 não funcionais (gerados por `docs/gerar-requisitos.py`)
+- [`docs/avaliacao-usabilidade.md`](docs/avaliacao-usabilidade.md) — roteiro de avaliação com usuários
+- [`deploy/LEIA-ME.md`](deploy/LEIA-ME.md) — implantação gratuita (Render + Neon + R2)
+- [`CHANGELOG.md`](CHANGELOG.md) — histórico de versões
+- Swagger da API em `/api/schema/swagger-ui/` (com o servidor rodando)
 
 ---
 
 ## 🤝 Contribuindo
 
-1. Crie uma branch para sua feature: `git checkout -b feature/sua-feature`
-2. Commit com mensagem descritiva: `git commit -m "feat: descrição"`
-3. Push e abra um Pull Request
-4. Certifique-se que os testes passam: `python manage.py test`
+Fluxo de branches:
+
+| Branch | Uso |
+|--------|-----|
+| `main` | Código estável; cada versão publicada recebe uma tag `vX.Y.Z` |
+| `develop` | Integração das próximas mudanças |
+| `feature/*`, `fix/*`, `chore/*` | Trabalho isolado, criado a partir de `develop` e integrado com PR |
+
+Mensagens de commit seguem [Conventional Commits](https://www.conventionalcommits.org/pt-br/)
+(`feat:`, `fix:`, `chore:`, `docs:`, `test:`). Antes de abrir o PR, rode
+`python manage.py test` e `python -m ruff check .`.
 
 ---
 

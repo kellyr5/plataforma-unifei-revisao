@@ -1,0 +1,40 @@
+# Blueprint do Render. Valores marcados com sync: false são pedidos no painel
+# na primeira criação e nunca ficam no repositório.
+# Passo a passo completo em deploy/LEIA-ME.md.
+services:
+  - type: web
+    name: plataforma-unifei
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/auth/estatisticas/
+    autoDeploy: true
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        sync: false
+      - key: CSRF_TRUSTED_ORIGINS
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: USAR_REDIS
+        value: "False"
+      - key: BUSCA_SEMANTICA_ATIVA
+        value: "False"
+      - key: SECURE_HSTS_SECONDS
+        value: "3600"
+      - key: CARGA_INICIAL
+        value: "false"
+      - key: AWS_STORAGE_BUCKET_NAME
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_S3_ENDPOINT_URL
+        sync: false
+      - key: AWS_S3_CUSTOM_DOMAIN
+        sync: false

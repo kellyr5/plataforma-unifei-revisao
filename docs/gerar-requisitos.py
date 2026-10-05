@@ -193,7 +193,11 @@ FUNCIONAIS = [
     ('RF-FOR-012', 'Denunciar conteúdo', 'Fórum',
      'Usuário sinaliza conteúdo inadequado para análise da moderação.',
      'POST /api/forum/posts/{id}/denunciar/. Cria alerta com motivo e notifica '
-     'quem modera a disciplina.',
+     'quem modera a disciplina. Na interface, o botão Denunciar aparece no '
+     'tópico e em cada resposta, abre um campo de motivo obrigatório e passa a '
+     'indicar "Denúncia enviada" depois do envio. Não é oferecido ao autor do '
+     'conteúdo, e a API recusa denúncia repetida enquanto a anterior estiver '
+     'em análise.',
      'Todos', 'ESSENCIAL'),
 
     ('RF-FOR-013', 'Assumir análise de denúncia', 'Fórum',
@@ -261,6 +265,17 @@ FUNCIONAIS = [
      'Usuário vê e baixa os arquivos anexados a uma dúvida.',
      'GET /api/forum/posts/{id}/arquivos/.',
      'Todos', 'IMPORTANTE'),
+
+    ('RF-FOR-023', 'Sugerir dúvidas parecidas antes de publicar', 'Fórum',
+     'Ao escrever o título de uma nova dúvida, o aluno vê discussões '
+     'semelhantes já existentes na disciplina e pode consultá-las antes de '
+     'publicar.',
+     'Tela de nova dúvida consulta GET /api/busca/ com a disciplina escolhida, '
+     'até 5 resultados, 500 ms depois da última tecla e com título de ao menos '
+     '4 caracteres. Resultados repetidos do mesmo tópico são agrupados e os '
+     'links abrem em outra aba, para não perder o texto digitado. Não é '
+     'exibido a quem leciona, que publica avisos e material.',
+     'Aluno/Monitor', 'IMPORTANTE'),
 
     # --- Colaboracao ---
     ('RF-COL-001', 'Propor trabalho em grupo', 'Colaboração',
@@ -811,6 +826,14 @@ NAO_FUNCIONAIS = [
      'localmente.',
      'IMPORTANTE'),
 
+    ('RNF-DES-008', 'Busca interativa sem sobrecarga', 'Desempenho',
+     'A sugestão de dúvidas parecidas não dispara uma consulta a cada tecla.',
+     'Espera de 500 ms após a última tecla, cancelamento da consulta anterior '
+     'quando a resposta chega fora de ordem e limite de 5 resultados. Evita '
+     'carga desnecessária no servidor e a exibição de resultado de um título '
+     'que já foi alterado.',
+     'IMPORTANTE'),
+
     # --- Confiabilidade ---
     ('RNF-CON-001', 'Degradação previsível da busca', 'Confiabilidade',
      'Sem o modelo semântico, a busca continua funcionando em modo textual.',
@@ -835,8 +858,10 @@ NAO_FUNCIONAIS = [
 
     ('RNF-CON-004', 'Verificação automatizada', 'Confiabilidade',
      'As regras de permissão e privacidade têm teste que as sustenta.',
-     'Suíte de testes automatizados cobrindo autenticação, visibilidade por '
-     'matrícula, privacidade da conversa, moderação e o acervo de arquivos.',
+     'Suíte de 227 testes automatizados cobrindo autenticação, visibilidade '
+     'por matrícula, privacidade da conversa, canal da monitoria, moderação e '
+     'o acervo de arquivos. Análise estática do backend com ruff e verificação '
+     'de tipos do frontend com tsc na mesma rotina.',
      'ESSENCIAL'),
 
     ('RNF-CON-005', 'Reprodutibilidade do conjunto de demonstração',
