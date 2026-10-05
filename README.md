@@ -138,7 +138,7 @@ Veja [`deploy/LEIA-ME.md`](deploy/LEIA-ME.md) e o blueprint [`render.yaml`](rend
 ## 🧪 Testes
 
 ```bash
-python manage.py test            # 227 testes
+python manage.py test            # 230 testes
 python -m ruff check .           # lint do backend
 python docs/gerar-requisitos.py  # regenera as planilhas de RF/RNF (requer openpyxl)
 cd frontend && npx tsc -b        # tipos do frontend

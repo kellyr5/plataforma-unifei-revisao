@@ -14,6 +14,7 @@ retorne 403.
 """
 
 import logging
+import re
 
 from django.db.models import Q
 
@@ -114,13 +115,65 @@ def _publicacoes_permitidas(usuario, disciplina=None):
     return queryset.filter(Q(restrito=False) | Q(autor=usuario))
 
 
+PALAVRAS_COMUNS = frozenset({
+    'como', 'para', 'por', 'que', 'qual', 'quais', 'uma', 'uns', 'umas', 'com',
+    'sem', 'dos', 'das', 'nos', 'nas', 'num', 'numa', 'ser', 'sao', 'esta',
+    'este', 'essa', 'esse', 'isso', 'mais', 'menos', 'muito', 'quando', 'onde',
+    'porque', 'ainda', 'sobre', 'entre', 'pode', 'posso', 'fazer', 'tenho',
+    'alguem', 'alguma', 'algum', 'duvida',
+})
+
+
+def _termos_da_consulta(consulta):
+    """
+    Palavras que valem a pena procurar, reduzidas ao radical.
+
+    O radical (cinco primeiras letras das palavras longas) faz "inserir" achar
+    "insercao" e "vetores" achar "vetor", sem depender de extensao do banco.
+    """
+    termos = []
+    for palavra in re.findall(r'\w{4,}', consulta.lower()):
+        if palavra in PALAVRAS_COMUNS:
+            continue
+        radical = palavra[:5] if len(palavra) > 6 else palavra
+        if radical not in termos:
+            termos.append(radical)
+    return termos
+
+
 def buscar_textual(usuario, consulta, disciplina=None, limite=20):
-    """Correspondencia por termo, no titulo e no conteudo."""
-    return list(
-        _publicacoes_permitidas(usuario, disciplina).filter(
-            Q(titulo__icontains=consulta) | Q(conteudo__icontains=consulta)
-        ).order_by('-created_at')[:limite]
-    )
+    """
+    Correspondencia por termo, no titulo e no conteudo.
+
+    Primeiro tenta o trecho exato digitado. Se nada aparece, procura as
+    palavras soltas e ordena por quantas delas a publicacao contem: um titulo
+    escrito como frase quase nunca aparece inteiro em outra publicacao, e
+    exigir isso esvaziava a busca justamente no caso mais comum.
+    """
+    base = _publicacoes_permitidas(usuario, disciplina)
+
+    exato = list(base.filter(
+        Q(titulo__icontains=consulta) | Q(conteudo__icontains=consulta)
+    ).order_by('-created_at')[:limite])
+    if exato:
+        return exato
+
+    termos = _termos_da_consulta(consulta)
+    if not termos:
+        return []
+
+    filtro = Q()
+    for termo in termos:
+        filtro |= Q(titulo__icontains=termo) | Q(conteudo__icontains=termo)
+
+    candidatos = list(base.filter(filtro).order_by('-created_at')[:200])
+
+    def acertos(post):
+        texto = f'{post.titulo or ""} {post.conteudo or ""}'.lower()
+        return sum(1 for termo in termos if termo in texto)
+
+    candidatos.sort(key=acertos, reverse=True)  # estavel: empate fica por data
+    return candidatos[:limite]
 
 
 def buscar_semantica(usuario, consulta, disciplina=None, limite=20, distancia_maxima=0.75):

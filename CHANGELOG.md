@@ -3,6 +3,14 @@
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/);
 versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.1.2] - 2026-10-05
+
+### Corrigido
+- Busca textual (usada quando o modelo semântico está desligado, como no Render) procurava a
+  frase inteira digitada, então um título com várias palavras quase nunca encontrava algo e
+  as "dúvidas parecidas" ficavam vazias. Agora procura as palavras (sem as muito comuns,
+  reduzidas ao radical) e ordena por quantas aparecem. Suíte: 230 testes.
+
 ## [1.1.1] - 2026-10-05
 
 ### Corrigido

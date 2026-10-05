@@ -52,6 +52,33 @@ class BuscaTextualTests(APITestCase):
 
         self.assertEqual(resposta.data['total'], 1)
 
+    def test_frase_com_palavras_soltas_encontra_por_termos(self):
+        """Um titulo escrito como frase nao aparece inteiro em outra publicacao."""
+        resposta = self.client.get(
+            '/api/busca/', {'q': 'erro de segmentacao quando libero memoria'},
+        )
+
+        self.assertEqual(resposta.data['modo'], 'textual')
+        self.assertEqual(resposta.data['total'], 1)
+        self.assertEqual(str(self.topico.id), resposta.data['resultados'][0]['id'])
+
+    def test_radical_aproxima_formas_da_mesma_palavra(self):
+        criar_topico(
+            self.aluno, self.disciplina,
+            titulo='Lista encadeada ou vetor para insercao no meio?',
+            conteudo='Preciso inserir elementos no meio da estrutura.',
+        )
+
+        resposta = self.client.get('/api/busca/', {'q': 'inserir no meio de um vetor'})
+
+        self.assertEqual(resposta.data['total'], 1)
+        self.assertIn('insercao', resposta.data['resultados'][0]['titulo'])
+
+    def test_palavras_comuns_sozinhas_nao_trazem_resultado(self):
+        resposta = self.client.get('/api/busca/', {'q': 'como para que'})
+
+        self.assertEqual(resposta.data['total'], 0)
+
     def test_consulta_vazia_nao_erra(self):
         resposta = self.client.get('/api/busca/', {'q': '   '})
 
