@@ -9,7 +9,7 @@ registrados no apps.py.
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from voluntariado.models import Oportunidade, InscricaoVoluntariado, Certificado
+from voluntariado.models import Oportunidade, InscricaoVoluntariado
 from auditoria.services import registrar_acao, serializar_objeto
 
 

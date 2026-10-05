@@ -22,7 +22,6 @@ from colaboracao.models import (
     MensagemChat,
     ParticipanteConversa,
     SolicitacaoAjuda,
-    Trabalho,
 )
 from forum.models import PermissaoDisciplina
 from notificacoes.services import criar_notificacao
