@@ -1,9 +1,16 @@
-# Blueprint do Render. Valores marcados com sync: false são pedidos no painel
-# na primeira criação e nunca ficam no repositório.
-# Passo a passo completo em deploy/LEIA-ME.md.
+# Blueprint do Render. Cria um serviço e um banco PRÓPRIOS desta versão, com
+# nomes distintos, para não associar nem alterar outro serviço do workspace.
+# Valores marcados com sync: false são pedidos no painel na primeira criação e
+# nunca ficam no repositório. Passo a passo completo em deploy/LEIA-ME.md.
+databases:
+  - name: plataforma-unifei-revisao-db
+    databaseName: plataforma_unifei
+    user: plataforma
+    plan: free
+
 services:
   - type: web
-    name: plataforma-unifei
+    name: plataforma-unifei-revisao
     runtime: docker
     plan: free
     dockerfilePath: ./Dockerfile
@@ -14,27 +21,23 @@ services:
         generateValue: true
       - key: DEBUG
         value: "False"
+      # Aceita qualquer endereço *.onrender.com; restrinja ao endereço final
+      # (ou ao domínio próprio) quando a implantação estabilizar.
       - key: ALLOWED_HOSTS
-        sync: false
+        value: ".onrender.com"
       - key: CSRF_TRUSTED_ORIGINS
-        sync: false
+        value: "https://*.onrender.com"
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: plataforma-unifei-revisao-db
+          property: connectionString
       - key: USAR_REDIS
         value: "False"
       - key: BUSCA_SEMANTICA_ATIVA
         value: "False"
       - key: SECURE_HSTS_SECONDS
         value: "3600"
+      # true só na primeira implantação (popula a demonstração); depois mude
+      # para false no painel, senão cada reinício reinicia os dados.
       - key: CARGA_INICIAL
-        value: "false"
-      - key: AWS_STORAGE_BUCKET_NAME
-        sync: false
-      - key: AWS_ACCESS_KEY_ID
-        sync: false
-      - key: AWS_SECRET_ACCESS_KEY
-        sync: false
-      - key: AWS_S3_ENDPOINT_URL
-        sync: false
-      - key: AWS_S3_CUSTOM_DOMAIN
         sync: false
