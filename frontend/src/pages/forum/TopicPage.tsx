@@ -229,6 +229,110 @@ function VoteBlock({ postId, totalVotos, onVoted }: {
 }
 
 /* ============================================================
+   COMPONENTE: Denunciar publicação
+   O botão abre um campo para o motivo. A denúncia chega à fila de
+   moderação da disciplina (monitor e professor).
+   ============================================================ */
+function erroDaApi(err: unknown): string | undefined {
+  return (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+}
+
+function BotaoDenunciar({ post }: { post: Post }) {
+  const { user } = useAuth()
+  const [aberto, setAberto] = useState(false)
+  const [motivo, setMotivo] = useState('')
+  const [enviando, setEnviando] = useState(false)
+  const [enviada, setEnviada] = useState(false)
+
+  // A API recusa denúncia do próprio conteúdo, então nem oferecemos o botão.
+  if (!user || user.id === post.autor) return null
+
+  async function denunciar() {
+    if (!motivo.trim()) {
+      toast.error('Descreva o motivo da denúncia.')
+      return
+    }
+    setEnviando(true)
+    try {
+      await api.post(`/forum/posts/${post.id}/denunciar/`, { motivo: motivo.trim() })
+      toast.success('Denúncia enviada à moderação.')
+      setEnviada(true)
+      setAberto(false)
+      setMotivo('')
+    } catch (err) {
+      toast.error(erroDaApi(err) || 'Não foi possível enviar a denúncia.')
+    } finally {
+      setEnviando(false)
+    }
+  }
+
+  if (enviada) {
+    return <span style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>Denúncia enviada</span>
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+      <button
+        type="button"
+        onClick={() => setAberto(a => !a)}
+        aria-expanded={aberto}
+        className="flex items-center rounded-lg cursor-pointer"
+        style={{
+          padding: '6px 12px', gap: '4px', fontSize: '12px',
+          background: 'var(--bg-input)', color: 'var(--text-tertiary)',
+          border: '1px solid var(--border)',
+        }}
+      >
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v18M3 4.5h13.5l-2.25 4.5 2.25 4.5H3" />
+        </svg>
+        Denunciar
+      </button>
+
+      {aberto && (
+        <div style={{ width: '320px', maxWidth: '80vw', marginTop: '8px' }}>
+          <textarea
+            value={motivo}
+            onChange={(e) => setMotivo(e.target.value)}
+            placeholder="Por que este conteúdo deve ser analisado pela moderação?"
+            rows={3}
+            maxLength={1000}
+            className="outline-none"
+            style={{
+              width: '100%', padding: '10px 12px', fontSize: '13px', borderRadius: '10px',
+              background: 'var(--bg-input)', color: 'var(--text-primary)',
+              border: '1px solid var(--border)', resize: 'vertical',
+            }}
+          />
+          <div className="flex items-center" style={{ gap: '10px', marginTop: '8px' }}>
+            <button
+              type="button"
+              onClick={denunciar}
+              disabled={enviando}
+              className="rounded-lg font-medium text-white cursor-pointer"
+              style={{
+                padding: '7px 16px', fontSize: '13px', border: 'none',
+                background: 'var(--accent-blue)', opacity: enviando ? 0.6 : 1,
+              }}
+            >
+              {enviando ? 'Enviando...' : 'Enviar denúncia'}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setAberto(false); setMotivo('') }}
+              className="cursor-pointer"
+              style={{ fontSize: '13px', background: 'none', border: 'none', color: 'var(--text-tertiary)' }}
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ============================================================
    COMPONENTE: Card de resposta
    ============================================================ */
 function ResponseCard({ post, topicAuthorId, onAction }: {
@@ -302,7 +406,7 @@ function ResponseCard({ post, topicAuthorId, onAction }: {
           </div>
 
           {/* Botoes de acao */}
-          <div className="flex items-center" style={{ gap: '6px' }}>
+          <div className="flex" style={{ gap: '6px', alignItems: 'flex-start' }}>
             {/* Dúvida persiste */}
             <button
               onClick={() => handleAction('persiste')}
@@ -341,6 +445,8 @@ function ResponseCard({ post, topicAuthorId, onAction }: {
                 Marcar como melhor
               </button>
             )}
+
+            <BotaoDenunciar post={post} />
           </div>
         </div>
       </div>
@@ -509,7 +615,7 @@ export default function TopicPage() {
             {topic.conteudo}
           </div>
 
-          <div className="flex items-center" style={{ marginTop: '16px', gap: '8px', fontSize: '12px', color: 'var(--text-tertiary)' }}>
+          <div className="flex items-center flex-wrap" style={{ marginTop: '16px', gap: '8px', fontSize: '12px', color: 'var(--text-tertiary)' }}>
             <div className="flex items-center justify-center rounded-full" style={{
               width: '24px', height: '24px', background: 'rgba(0,48,135,0.08)',
               color: 'var(--accent-blue)', fontSize: '11px', fontWeight: 600,
@@ -518,6 +624,9 @@ export default function TopicPage() {
             </div>
             <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>{topic.autor_nome}</span>
             <span>{tempoRelativo(topic.created_at)}</span>
+            <span style={{ marginLeft: 'auto' }}>
+              <BotaoDenunciar post={topic} />
+            </span>
           </div>
 
           <BlocoRestricao
