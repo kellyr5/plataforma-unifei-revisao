@@ -272,7 +272,9 @@ FUNCIONAIS = [
      'publicar.',
      'Tela de nova dúvida consulta GET /api/busca/ com a disciplina escolhida, '
      'até 5 resultados, 500 ms depois da última tecla e com título de ao menos '
-     '4 caracteres. Resultados repetidos do mesmo tópico são agrupados e os '
+     '4 caracteres. Sem o modelo semântico, a busca textual procura as palavras '
+     'do título (sem as muito comuns, reduzidas ao radical e ordenadas pela '
+     'quantidade de palavras encontradas), e não a frase inteira. Resultados repetidos do mesmo tópico são agrupados e os '
      'links abrem em outra aba, para não perder o texto digitado. Não é '
      'exibido a quem leciona, que publica avisos e material.',
      'Aluno/Monitor', 'IMPORTANTE'),
@@ -858,7 +860,7 @@ NAO_FUNCIONAIS = [
 
     ('RNF-CON-004', 'Verificação automatizada', 'Confiabilidade',
      'As regras de permissão e privacidade têm teste que as sustenta.',
-     'Suíte de 227 testes automatizados cobrindo autenticação, visibilidade '
+     'Suíte de 230 testes automatizados cobrindo autenticação, visibilidade '
      'por matrícula, privacidade da conversa, canal da monitoria, moderação e '
      'o acervo de arquivos. Análise estática do backend com ruff e verificação '
      'de tipos do frontend com tsc na mesma rotina.',
