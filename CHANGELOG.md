@@ -3,6 +3,13 @@
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/);
 versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.1.1] - 2026-10-05
+
+### Corrigido
+- `render.yaml` usava o nome `plataforma-unifei`, que fazia o Render associar e alterar o
+  serviço já existente no workspace. Agora cria serviço (`plataforma-unifei-revisao`) e
+  banco Postgres próprios, com `ALLOWED_HOSTS`/`CSRF_TRUSTED_ORIGINS` para `*.onrender.com`.
+
 ## [1.1.0] - 2026-10-05
 
 ### Adicionado
