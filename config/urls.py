@@ -1,3 +1,4 @@
+import os
 from django.contrib import admin
 from django.urls import path, include, re_path
 from django.conf import settings
@@ -36,7 +37,9 @@ urlpatterns = [
 # Sem esta rota, atualizar a pagina em /forum ou /perfil produziria 404: o
 # servidor procuraria um arquivo com esse nome, que nao existe, porque a rota
 # so faz sentido depois que a aplicacao carregou.
-if not settings.DEBUG:
+# SERVIR_FRONTEND=True permite testar o build do React localmente, com DEBUG
+# ligado e sem HTTPS, usando só o Django.
+if not settings.DEBUG or os.environ.get('SERVIR_FRONTEND', '').lower() == 'true':
     from django.views.generic import TemplateView
 
     urlpatterns += [
