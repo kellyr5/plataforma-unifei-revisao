@@ -7,6 +7,7 @@ ninguém perceberia até alguém reclamar.
 """
 
 from datetime import timedelta
+from unittest import mock
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
@@ -19,7 +20,6 @@ from colaboracao.models import (
     ArquivoTrabalho,
     Conversa,
     GrupoTrabalho,
-    MembroGrupo,
     MensagemChat,
     SolicitacaoAjuda,
     Trabalho,
@@ -686,6 +686,17 @@ class CanalDeMonitoriaTests(APITestCase):
     """
 
     def setUp(self):
+        # O sinal sincroniza o canal em transaction.on_commit. O APITestCase
+        # embrulha cada teste numa transacao que nunca fecha, entao o callback
+        # nao rodaria e o canal jamais nasceria. Executar na hora reproduz o
+        # que acontece em producao, onde cada requisicao confirma a sua.
+        patch = mock.patch(
+            'colaboracao.signals.transaction.on_commit',
+            side_effect=lambda funcao, *a, **kw: funcao(),
+        )
+        patch.start()
+        self.addCleanup(patch.stop)
+
         self.banco = criar_disciplina(codigo='CTCO03', nome='Banco de Dados')
         self.algoritmos = criar_disciplina(codigo='CTCO01', nome='Algoritmos')
 
