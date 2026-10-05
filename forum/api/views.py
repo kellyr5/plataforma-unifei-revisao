@@ -1,4 +1,3 @@
-import os
 import magic
 
 from rest_framework import viewsets, filters, permissions, status
@@ -24,7 +23,6 @@ from forum.api.serializers import (
     DisciplinaSerializer,
     PostSerializer,
     AlertaConteudoSerializer,
-    ReacaoPersisteSerializer,
     PermissaoDisciplinaSerializer,
     ArquivoSerializer,
 )

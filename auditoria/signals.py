@@ -13,7 +13,7 @@ Login/logout sao auditados em handler especifico via signal do Django.
 """
 
 from django.contrib.auth.signals import user_logged_in, user_logged_out
-from django.db.models.signals import post_save, pre_delete, pre_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 
 from autenticacao.models import Usuario

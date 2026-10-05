@@ -118,7 +118,7 @@ class Command(BaseCommand):
 
             vetores = embeddings.gerar_em_lote([texto for _, texto in trabalho])
 
-            for (post, texto), vetor in zip(trabalho, vetores):
+            for (post, texto), vetor in zip(trabalho, vetores, strict=True):
                 IndicePost.objects.update_or_create(
                     post=post,
                     defaults={
