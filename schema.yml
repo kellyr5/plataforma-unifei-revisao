@@ -612,6 +612,29 @@ paths:
               schema:
                 $ref: '#/components/schemas/SolicitacaoAjuda'
           description: ''
+  /api/colaboracao/arquivos/:
+    get:
+      operationId: colaboracao_arquivos_retrieve
+      description: |-
+        GET /api/colaboracao/arquivos/
+
+        Reune, num lugar so, todo o material que passou pelas maos da pessoa:
+        anexos de conversa, material de apoio dos trabalhos e anexos de publicacao
+        no forum. Vem agrupado por disciplina.
+
+        Antes disto, reencontrar um arquivo exigia lembrar por onde ele havia
+        chegado e rolar a conversa ate ele. O aluno que recebeu a especificacao do
+        trabalho em marco precisava percorrer dois meses de mensagens em maio.
+
+        Nao ha copia nem modelo novo: a consulta le o que ja esta gravado, com o
+        mesmo recorte de permissao de cada origem.
+      tags:
+      - colaboracao
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/colaboracao/conversas/:
     get:
       operationId: colaboracao_conversas_list
@@ -734,6 +757,41 @@ paths:
         O envio tambem acontece pelo WebSocket. Este caminho existe para o
         anexo, que nao trafega bem por socket, e como alternativa quando a
         conexao em tempo real cai.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Um string UUID que identifica este Conversa.
+        required: true
+      tags:
+      - colaboracao
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversa'
+          description: ''
+  /api/colaboracao/conversas/{id}/participantes/:
+    get:
+      operationId: colaboracao_conversas_participantes_retrieve
+      description: |-
+        GET /api/colaboracao/conversas/{id}/participantes/
+
+        Quem esta na conversa, com o papel de cada um.
+
+        Saber com quem se fala e informacao basica de qualquer conversa, e
+        faltava: a interface mostrava apenas a contagem. Numa conversa de
+        grupo o numero basta, porque a composicao e conhecida; num canal que
+        reune professores e monitores de uma disciplina, nao — a contagem
+        inesperada nao tem como ser investigada sem a lista.
+
+        O papel vem do vinculo com a disciplina da conversa, quando existe.
+        Na conversa privada nao ha papel a exibir.
       parameters:
       - in: path
         name: id
@@ -1024,6 +1082,32 @@ paths:
               schema:
                 $ref: '#/components/schemas/GrupoTrabalho'
           description: ''
+  /api/colaboracao/mensagens/{id}/:
+    delete:
+      operationId: colaboracao_mensagens_destroy
+      description: |-
+        DELETE /api/colaboracao/mensagens/{id}/
+
+        Remove a propria mensagem, dentro do prazo.
+
+        E remocao logica: a linha permanece no banco com deleted_at
+        preenchido. Some da conversa para todos, e o historico de quem
+        precisar auditar continua intacto.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Um string UUID que identifica este Mensagem.
+        required: true
+      tags:
+      - colaboracao
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/colaboracao/mensagens/{id}/pedir-ajuda/:
     post:
       operationId: colaboracao_mensagens_pedir_ajuda_create
@@ -1234,6 +1318,70 @@ paths:
         Quem cursa a disciplina consulta; criar e alterar cabe a quem leciona ou
         monitora, porque a divisao em grupos e decisao pedagogica.
       parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Um string UUID que identifica este Trabalho em Grupo.
+        required: true
+      tags:
+      - colaboracao
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/colaboracao/trabalhos/{id}/anexar/:
+    post:
+      operationId: colaboracao_trabalhos_anexar_create
+      description: |-
+        POST /api/colaboracao/trabalhos/{id}/anexar/
+
+        Junta material de apoio ao enunciado: especificacao em PDF, base de
+        dados, esqueleto de codigo, rubrica de correcao.
+
+        So quem conduz a turma anexa. O material e da disciplina inteira, e
+        deixar qualquer matriculado adicionar arquivo ao enunciado abriria
+        caminho para o proprio enunciado ser contestado.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Um string UUID que identifica este Trabalho em Grupo.
+        required: true
+      tags:
+      - colaboracao
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TrabalhoRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TrabalhoRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trabalho'
+          description: ''
+  /api/colaboracao/trabalhos/{id}/anexos/{arquivo_id}/:
+    delete:
+      operationId: colaboracao_trabalhos_anexos_destroy
+      description: Remove um material de apoio. Cabe a quem conduz a turma.
+      parameters:
+      - in: path
+        name: arquivo_id
+        schema:
+          type: string
+        required: true
       - in: path
         name: id
         schema:
@@ -4005,6 +4153,47 @@ components:
       - tamanho_bytes
       - tamanho_legivel
       - tipo_mime
+    ArquivoTrabalho:
+      type: object
+      description: Material de apoio do enunciado.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        nome_original:
+          type: string
+          readOnly: true
+        tamanho_bytes:
+          type: integer
+          readOnly: true
+        tipo_mime:
+          type: string
+          readOnly: true
+        url:
+          type: string
+          nullable: true
+          readOnly: true
+        enviado_por:
+          type: string
+          format: uuid
+          readOnly: true
+        enviado_por_nome:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - enviado_por
+      - enviado_por_nome
+      - id
+      - nome_original
+      - tamanho_bytes
+      - tipo_mime
+      - url
     AtivacaoRequest:
       type: object
       description: Serializer para ativacao de conta via codigo OTP.
@@ -4131,6 +4320,15 @@ components:
         horas_realizadas:
           type: integer
           readOnly: true
+        modalidade:
+          type: string
+          readOnly: true
+          description: Modalidade da acao no momento da emissao
+        contribuicao:
+          type: string
+          readOnly: true
+          description: 'O que foi entregue, ja formatado: "40 pecas de agasalho".
+            Vazio nas acoes presenciais, onde a contribuicao e o tempo'
         arquivo_pdf_url:
           type: string
           nullable: true
@@ -4143,6 +4341,7 @@ components:
       - area_atuacao
       - arquivo_pdf_url
       - codigo_validacao
+      - contribuicao
       - cpf_estudante
       - data_fim
       - data_inicio
@@ -4150,6 +4349,7 @@ components:
       - horas_realizadas
       - id
       - local
+      - modalidade
       - nome_estudante
       - nome_oportunidade
       - nome_organizacao
@@ -4188,6 +4388,9 @@ components:
           nullable: true
           description: Preenchido no encerramento do semestre; torna a conversa somente
             leitura
+        somente_leitura:
+          type: boolean
+          readOnly: true
         total_participantes:
           type: integer
           readOnly: true
@@ -4211,6 +4414,7 @@ components:
       - id
       - nao_lidas
       - semestre
+      - somente_leitura
       - tipo
       - titulo
       - total_participantes
@@ -4219,11 +4423,13 @@ components:
       enum:
       - disciplina
       - grupo
+      - monitoria
       - privada
       type: string
       description: |-
         * `disciplina` - Turma da disciplina
         * `grupo` - Grupo de trabalho
+        * `monitoria` - Monitoria da disciplina
         * `privada` - Conversa privada
     Curso:
       type: object
@@ -4552,6 +4758,29 @@ components:
           type: string
           readOnly: true
           description: Comentario da ONG sobre o desempenho do voluntario
+        quantidade_declarada:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+          description: O que o estudante informou que iria entregar
+        quantidade_confirmada:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: O que a organizacao confirmou ter recebido. E o unico valor
+            que entra na contagem da campanha
+        item_doado:
+          type: string
+          description: Descricao do que foi entregue, quando a campanha aceita itens
+            variados
+          maxLength: 160
+        oportunidade_unidade:
+          type: string
+          readOnly: true
+        oportunidade_modalidade:
+          type: string
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -4573,8 +4802,11 @@ components:
       - id
       - motivo_decisao
       - oportunidade
+      - oportunidade_modalidade
       - oportunidade_organizacao
       - oportunidade_titulo
+      - oportunidade_unidade
+      - quantidade_confirmada
       - status
       - status_display
       - updated_at
@@ -4588,6 +4820,17 @@ components:
         motivacao:
           type: string
           description: Texto livre escrito pelo estudante no momento da inscricao
+        quantidade_declarada:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+          description: O que o estudante informou que iria entregar
+        item_doado:
+          type: string
+          description: Descricao do que foi entregue, quando a campanha aceita itens
+            variados
+          maxLength: 160
       required:
       - oportunidade
     InscricaoVoluntariadoStatusEnum:
@@ -4709,6 +4952,14 @@ components:
           nullable: true
         tipo_midia:
           $ref: '#/components/schemas/TipoMidiaEnum'
+    ModalidadeEnum:
+      enum:
+      - presencial
+      - doacao
+      type: string
+      description: |-
+        * `presencial` - Acao presencial
+        * `doacao` - Campanha de doacao
     ModoFormacaoEnum:
       enum:
       - professor
@@ -4879,13 +5130,29 @@ components:
           type: string
           description: Cidade/local de realizacao
           maxLength: 255
+        modalidade:
+          allOf:
+          - $ref: '#/components/schemas/ModalidadeEnum'
+          description: |-
+            Presencial mede tempo; doacao mede quantidade arrecadada
+
+            * `presencial` - Acao presencial
+            * `doacao` - Campanha de doacao
+        modalidade_display:
+          type: string
+          readOnly: true
+        e_doacao:
+          type: boolean
+          readOnly: true
         vagas:
           type: integer
           maximum: 2147483647
           minimum: 0
+          description: Ignorado na campanha de doacao, que nao limita participantes
         vagas_disponiveis:
           type: integer
           readOnly: true
+          nullable: true
         total_inscritos:
           type: integer
           readOnly: true
@@ -4904,6 +5171,31 @@ components:
           maximum: 2147483647
           minimum: 0
           description: Carga horaria estimada em horas
+        unidade_medida:
+          type: string
+          description: 'Como a arrecadacao e contada, no plural: pecas de agasalho,
+            quilos de alimento, litros de leite'
+          maxLength: 60
+        meta_quantidade:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+          description: 'Quanto a campanha pretende arrecadar. Opcional: sem meta,
+            a tela mostra apenas o total, sem barra de progresso'
+        horas_por_participacao:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          description: Horas que a organizacao atribui a quem participa da campanha,
+            para o certificado. Zero significa certificado sem horas
+        total_arrecadado:
+          type: integer
+          readOnly: true
+        progresso_meta:
+          type: number
+          format: double
+          readOnly: true
         data_inicio:
           type: string
           format: date
@@ -4940,17 +5232,21 @@ components:
       - data_fim
       - data_inicio
       - descricao
+      - e_doacao
       - esta_aberta_inscricao
       - id
       - imagem_url
       - local
       - minha_inscricao
+      - modalidade_display
       - organizacao
       - organizacao_foto_url
       - organizacao_nome
       - prazo_inscricao
+      - progresso_meta
       - status_display
       - titulo
+      - total_arrecadado
       - total_inscritos
       - updated_at
       - vagas_disponiveis
@@ -4983,15 +5279,42 @@ components:
           minLength: 1
           description: Cidade/local de realizacao
           maxLength: 255
+        modalidade:
+          allOf:
+          - $ref: '#/components/schemas/ModalidadeEnum'
+          description: |-
+            Presencial mede tempo; doacao mede quantidade arrecadada
+
+            * `presencial` - Acao presencial
+            * `doacao` - Campanha de doacao
         vagas:
           type: integer
           maximum: 2147483647
           minimum: 0
+          description: Ignorado na campanha de doacao, que nao limita participantes
         carga_horaria_total:
           type: integer
           maximum: 2147483647
           minimum: 0
           description: Carga horaria estimada em horas
+        unidade_medida:
+          type: string
+          description: 'Como a arrecadacao e contada, no plural: pecas de agasalho,
+            quilos de alimento, litros de leite'
+          maxLength: 60
+        meta_quantidade:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+          description: 'Quanto a campanha pretende arrecadar. Opcional: sem meta,
+            a tela mostra apenas o total, sem barra de progresso'
+        horas_por_participacao:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          description: Horas que a organizacao atribui a quem participa da campanha,
+            para o certificado. Zero significa certificado sem horas
         data_inicio:
           type: string
           format: date
@@ -5484,15 +5807,42 @@ components:
           minLength: 1
           description: Cidade/local de realizacao
           maxLength: 255
+        modalidade:
+          allOf:
+          - $ref: '#/components/schemas/ModalidadeEnum'
+          description: |-
+            Presencial mede tempo; doacao mede quantidade arrecadada
+
+            * `presencial` - Acao presencial
+            * `doacao` - Campanha de doacao
         vagas:
           type: integer
           maximum: 2147483647
           minimum: 0
+          description: Ignorado na campanha de doacao, que nao limita participantes
         carga_horaria_total:
           type: integer
           maximum: 2147483647
           minimum: 0
           description: Carga horaria estimada em horas
+        unidade_medida:
+          type: string
+          description: 'Como a arrecadacao e contada, no plural: pecas de agasalho,
+            quilos de alimento, litros de leite'
+          maxLength: 60
+        meta_quantidade:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+          description: 'Quanto a campanha pretende arrecadar. Opcional: sem meta,
+            a tela mostra apenas o total, sem barra de progresso'
+        horas_por_participacao:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          description: Horas que a organizacao atribui a quem participa da campanha,
+            para o certificado. Zero significa certificado sem horas
         data_inicio:
           type: string
           format: date
@@ -6109,6 +6459,11 @@ components:
           description: Grupo de quem consulta, para a tela saber se ja ha escolha
             feita.
           readOnly: true
+        arquivos:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArquivoTrabalho'
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -6118,6 +6473,7 @@ components:
           format: date-time
           readOnly: true
       required:
+      - arquivos
       - created_at
       - criado_por
       - criado_por_nome

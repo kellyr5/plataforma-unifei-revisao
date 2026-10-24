@@ -3,6 +3,26 @@
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/);
 versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [Não lançado] - 2026-10-24
+
+Somente documentação. Nenhuma linha do código da aplicação mudou.
+
+### Alterado
+- Requisitos revisados contra o código: **97 RF e 59 RNF** (eram 86 e 51). Entram 11 RF
+  (canal da monitoria e seu arquivamento, presença na conversa, participantes da conversa,
+  uma monitoria por disciplina, `sanear_vinculos`, `indexar_forum`, validação pública do
+  certificado, assinatura do responsável, consulta da auditoria, `criar_perfis_demo`) e
+  8 RNF (política de senha, proteções do navegador, origem do WebSocket, tentativas na
+  ativação, hash do código, CPF mascarado na validação, idioma e fuso, log de conexões).
+  Corrigida a descrição de RF-AUD-001, que dizia que a consulta era restrita à administração.
+- Divergências em relação ao TCC1 ampliadas de 9 para 21 itens, e nova aba
+  `Lacunas conhecidas` nos requisitos não funcionais.
+- README reorganizado: endereço de implantação e URL de clone deste repositório, rota da
+  documentação da API (`/api/docs/`), papel do Redis, contagens, tabela de comandos,
+  limitações conhecidas, e removido o link para `docs/estado-do-projeto.md`, que não existe.
+- `schema.yml` regenerado: passa a incluir o acervo de arquivos e a consulta de
+  participantes da conversa.
+
 ## [1.1.2] - 2026-10-05
 
 ### Corrigido

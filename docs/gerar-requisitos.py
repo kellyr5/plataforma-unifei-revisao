@@ -279,6 +279,36 @@ FUNCIONAIS = [
      'exibido a quem leciona, que publica avisos e material.',
      'Aluno/Monitor', 'IMPORTANTE'),
 
+    ('RF-FOR-024', 'Limitar a uma monitoria por disciplina', 'Fórum',
+     'A disciplina tem um monitor por vez, e atribuir outro exige encerrar a '
+     'monitoria atual.',
+     'Verificação na criação do vínculo de disciplina '
+     '(PermissaoDisciplinaViewSet.create). Se já houver monitor ativo, '
+     'responde 400 com mensagem que cita o monitor atual e orienta a encerrar '
+     'a monitoria antes. A regra existe porque a monitoria é um encargo único '
+     'por turma, e sem ela o canal da monitoria e a fila de pedidos de ajuda '
+     'alcançariam quem já não atende.',
+     'Professor/Coordenação', 'ESSENCIAL'),
+
+    ('RF-FOR-025', 'Sanear vínculos com disciplinas', 'Fórum',
+     'A coordenação identifica e corrige inconsistências nos vínculos, como '
+     'disciplina com vários monitores ou pessoas homônimas com papéis '
+     'repetidos.',
+     'Comando sanear_vinculos. Sem argumento apenas relata. Com --aplicar '
+     'corrige o que é seguro e reversível (desativa o monitor excedente) e '
+     'apenas relata o que exige decisão humana, como decidir qual de dois '
+     'cadastros homônimos é a pessoa real.',
+     'Coordenação', 'DESEJÁVEL'),
+
+    ('RF-FOR-026', 'Indexar publicações para a busca semântica', 'Fórum',
+     'A busca por significado passa a incluir o conteúdo que já existia antes '
+     'de o recurso ser ligado.',
+     'Comando indexar_forum (--tudo refaz todos os vetores, --lote define o '
+     'tamanho). Necessário ao ligar a busca num banco com conteúdo, ao trocar '
+     'o modelo de representação e após importações que não passaram pelos '
+     'sinais. Processa em lote por ser muito mais barato que um a um.',
+     'Coordenação', 'IMPORTANTE'),
+
     # --- Colaboracao ---
     ('RF-COL-001', 'Propor trabalho em grupo', 'Colaboração',
      'Professor cria um trabalho definindo quantidade de grupos, tamanho '
@@ -407,6 +437,39 @@ FUNCIONAIS = [
      'monitoria quando a disciplina tem monitor, professor quando não tem.',
      'Monitor/Professor', 'ESSENCIAL'),
 
+    ('RF-COL-019', 'Canal da monitoria por disciplina', 'Colaboração',
+     'Professor e monitor de cada disciplina ganham uma conversa reservada a '
+     'eles, para alinhar o atendimento aos alunos.',
+     'Conversa do tipo "monitoria", criada por sinal ao atribuir o monitor '
+     '(transaction.on_commit). Participantes: os professores e o monitor ativo '
+     'daquela disciplina. Aluno não entra, professor ou monitor de outra '
+     'disciplina não a enxerga, e disciplina sem monitor não ganha canal. '
+     'Título "Monitoria de <código>".',
+     'Professor/Monitor', 'IMPORTANTE'),
+
+    ('RF-COL-020', 'Arquivar o canal ao fim da monitoria', 'Colaboração',
+     'Quando a monitoria termina, o histórico permanece, mas o canal deixa de '
+     'aceitar mensagens.',
+     'O fim do vínculo marca a conversa como somente leitura (arquivada_em). '
+     'Se a monitoria for reconstituída, o mesmo canal reabre. O histórico é '
+     'preservado para consulta.',
+     'Professor/Monitor', 'IMPORTANTE'),
+
+    ('RF-COL-021', 'Indicar presença na conversa', 'Colaboração',
+     'Os participantes veem quantas pessoas estão conectadas à conversa '
+     'naquele momento.',
+     'WebSocket /ws/conversas/{id}/ (ConversaConsumer). Contagem mantida em '
+     'memória por conversa e anunciada ao grupo a cada entrada ou saída, no '
+     'formato {tipo: presenca, conectados: n}. É informação efêmera e se '
+     'perde ao reiniciar o processo, por isso não é gravada no banco.',
+     'Aluno/Monitor/Professor', 'DESEJÁVEL'),
+
+    ('RF-COL-022', 'Consultar participantes da conversa', 'Colaboração',
+     'Usuário vê quem faz parte de uma conversa de que participa.',
+     'GET /api/colaboracao/conversas/{id}/participantes/. Restrito a quem '
+     'participa da conversa.',
+     'Aluno/Monitor/Professor', 'DESEJÁVEL'),
+
     # --- Voluntariado ---
     ('RF-VOL-001', 'Publicar oportunidade', 'Voluntariado',
      'Organização parceira cadastra uma ação de voluntariado com período, '
@@ -527,6 +590,26 @@ FUNCIONAIS = [
      'saber que avalia uma equivalência declarada pela entidade.',
      'Sistema', 'ESSENCIAL'),
 
+    ('RF-VOL-019', 'Validar certificado pelo código', 'Voluntariado',
+     'Qualquer pessoa confere a autenticidade de um certificado informando o '
+     'código, sem precisar de conta.',
+     'GET /api/voluntariado/certificados/validar/{codigo}/, com acesso '
+     'público (AllowAny). Devolve {valido, certificado} com dados da '
+     'participação e o CPF do estudante mascarado. Permite que terceiros, '
+     'como a instância que valida horas complementares, verifiquem sem '
+     'depender da organização emissora.',
+     'Visitante', 'ESSENCIAL'),
+
+    ('RF-VOL-020', 'Assinar o certificado em nome da organização',
+     'Voluntariado',
+     'O certificado traz o nome, o cargo e a assinatura do responsável pela '
+     'organização.',
+     'A organização cadastra nome_responsavel, cargo_responsavel e a imagem '
+     'de assinatura no próprio perfil. O serviço de emissão '
+     '(voluntariado/services.py) leva esses dados ao modelo HTML do '
+     'certificado.',
+     'Organização', 'IMPORTANTE'),
+
     # --- Paineis por perfil ---
     ('RF-PAI-001', 'Painel de quem conduz a turma', 'Painéis',
      'Professor e monitor veem, num lugar só, as dúvidas sem resposta, os '
@@ -611,10 +694,21 @@ FUNCIONAIS = [
 
     # --- Auditoria ---
     ('RF-AUD-001', 'Registrar ações sensíveis', 'Auditoria',
-     'Ações de moderação e de gestão de vínculos ficam registradas.',
-     'Modelo de registro de auditoria, com autor, ação, alvo e momento. '
-     'Consulta restrita à administração.',
+     'Ações de moderação e de gestão de vínculos ficam registradas, com '
+     'autor, ação e momento.',
+     'Modelo AuditLog, com usuário, ação, objeto afetado e momento, gravado '
+     'junto da ação. Os registros não são apagados. A consulta está descrita '
+     'em RF-AUD-002.',
      'Sistema', 'IMPORTANTE'),
+
+    ('RF-AUD-002', 'Consultar o registro de auditoria', 'Auditoria',
+     'O usuário vê o que ele próprio executou, e a administração vê tudo, com '
+     'filtros.',
+     'GET /api/auditoria/ (somente leitura). Usuário comum enxerga apenas os '
+     'registros em que é o autor. Administração e superusuário enxergam todos '
+     'e podem filtrar por usuário. Filtros por ação e por período '
+     '(data_inicio e data_fim), com ordenação por data ou ação.',
+     'Todos', 'IMPORTANTE'),
 
     # --- Sistema ---
     ('RF-SIS-001', 'Alternar entre tema claro e escuro', 'Sistema',
@@ -638,6 +732,15 @@ FUNCIONAIS = [
      'atividade, deliberadamente incluindo uma sem professor atribuído, para '
      'que o painel de coordenação tenha o que apontar.',
      'Coordenação', 'IMPORTANTE'),
+
+    ('RF-SIS-004', 'Criar perfis de demonstração', 'Sistema',
+     'Cria um usuário de cada perfil, com dados para navegar o sistema e '
+     'avaliar como cada papel o enxerga.',
+     'Comando criar_perfis_demo, idempotente (rodar de novo atualiza em vez '
+     'de duplicar). Contas já nascem ativas e com senhas conhecidas, então '
+     'não deve ser usado em produção. Sem esses dados várias telas, como a '
+     'fila de moderação e o painel de andamento, aparecem vazias.',
+     'Coordenação', 'DESEJÁVEL'),
 ]
 
 
@@ -719,6 +822,46 @@ NAO_FUNCIONAIS = [
      'Moderação sem rastro impede contestar uma decisão.',
      'ESSENCIAL'),
 
+    ('RNF-SEG-011', 'Política de senha no cadastro', 'Segurança',
+     'Senhas fracas ou óbvias são recusadas no cadastro.',
+     'Validadores de senha do Django aplicados no serializador de registro: '
+     'similaridade com os dados pessoais, comprimento mínimo, lista de senhas '
+     'comuns e senhas só numéricas, além do mínimo de 8 caracteres e da '
+     'confirmação da senha.',
+     'ESSENCIAL'),
+
+    ('RNF-SEG-012', 'Proteções do navegador em produção', 'Segurança',
+     'O navegador recebe instruções para evitar tráfego sem cifra, '
+     'enquadramento da página e interpretação indevida de arquivos.',
+     'Em produção: cookies de sessão e de CSRF apenas por conexão cifrada, '
+     'cookie de sessão HttpOnly, HSTS com subdomínios, '
+     'X-Content-Type-Options nosniff, X-Frame-Options DENY e Referrer-Policy '
+     'same-origin.',
+     'ESSENCIAL'),
+
+    ('RNF-SEG-013', 'Validação da origem das conexões em tempo real',
+     'Segurança',
+     'Uma página de outro site não consegue abrir o canal em tempo real em '
+     'nome do usuário.',
+     'O Channels envolve o roteamento WebSocket com '
+     'AllowedHostsOriginValidator em produção, e a conexão exige token JWT. '
+     'As recusas e aceitações são registradas em log.',
+     'ESSENCIAL'),
+
+    ('RNF-SEG-014', 'Limite de tentativas na ativação da conta', 'Segurança',
+     'Quem erra o código de ativação repetidas vezes é barrado, o que impede '
+     'adivinhar o código.',
+     'O modelo CodigoAtivacao guarda o número de tentativas e a data de '
+     'expiração, configurável (padrão de 30 minutos). Passado o limite, é '
+     'preciso pedir um novo código.',
+     'ESSENCIAL'),
+
+    ('RNF-SEG-015', 'Código de ativação guardado com hash', 'Segurança',
+     'O código enviado por e-mail não fica legível no banco.',
+     'O código é armazenado com make_password e conferido com '
+     'check_password, o mesmo tratamento dado às senhas.',
+     'IMPORTANTE'),
+
     # --- Privacidade ---
     ('RNF-PRI-001', 'Privacidade da conversa de grupo', 'Privacidade',
      'A conversa do grupo é fechada aos integrantes, inclusive em relação ao '
@@ -740,6 +883,14 @@ NAO_FUNCIONAIS = [
      'perfil.',
      'Lista explícita de campos editáveis na edição do próprio perfil. Permitir '
      'a alteração quebraria a correspondência com o registro institucional.',
+     'ESSENCIAL'),
+
+    ('RNF-PRI-004', 'Mascaramento do CPF na validação pública', 'Privacidade',
+     'A conferência pública de um certificado não revela o CPF completo do '
+     'estudante.',
+     'O endpoint público de validação usa um serializador próprio '
+     '(CertificadoPublicoSerializer), que devolve o CPF mascarado e apenas os '
+     'dados necessários à conferência.',
      'ESSENCIAL'),
 
     # --- Integridade ---
@@ -942,6 +1093,13 @@ NAO_FUNCIONAIS = [
      'plataforma inteira.',
      'DESEJÁVEL'),
 
+    ('RNF-USA-009', 'Idioma e fuso horário do Brasil', 'Usabilidade',
+     'Textos do sistema e horários aparecem em português e no horário de '
+     'Brasília.',
+     'LANGUAGE_CODE pt-br e TIME_ZONE America/Sao_Paulo, com datas guardadas '
+     'em UTC e exibidas no fuso local.',
+     'IMPORTANTE'),
+
     # --- Manutenibilidade ---
     ('RNF-MAN-001', 'Regras de negócio fora das views', 'Manutenibilidade',
      'A mesma regra vale para a API e para o canal em tempo real.',
@@ -974,6 +1132,14 @@ NAO_FUNCIONAIS = [
      'Convenção adotada em todo o projeto. Reduz o risco de alguém desfazer uma '
      'correção por não conhecer o defeito que ela resolveu.',
      'IMPORTANTE'),
+
+    ('RNF-MAN-006', 'Registro das conexões em tempo real', 'Manutenibilidade',
+     'É possível descobrir por que uma conexão em tempo real foi aceita ou '
+     'recusada.',
+     'Configuração LOGGING com saída no console para os registradores '
+     'config.ws_auth e notificacoes, em nível INFO. Evita depurar o '
+     'handshake no escuro quando o frontend só relata erro de conexão.',
+     'DESEJÁVEL'),
 
     # --- Portabilidade e implantacao ---
     ('RNF-POR-001', 'Implantação reprodutível em contêiner',
@@ -1088,6 +1254,100 @@ DIVERGENCIAS = [
      'O certificado é emitido em PDF com código único de conferência. A '
      'assinatura criptográfica com certificado digital exigiria infraestrutura '
      'de chaves institucional, fora do alcance do trabalho.'),
+
+    ('Recuperação de senha por e-mail', 'Não implementado',
+     'RF-AUT-002 do TCC1',
+     'A ativação por código cobre o primeiro acesso, mas não existe fluxo de '
+     'redefinição de senha. Lacuna conhecida. A confirmar com a autora.'),
+
+    ('Logout por inatividade (15 minutos)', 'Não implementado',
+     'RF-AUT-004 do TCC1',
+     'A sessão expira pelo tempo dos tokens: 60 minutos de acesso e 7 dias de '
+     'renovação, com rotação do token de renovação.'),
+
+    ('Limite global de requisições e bloqueio de login', 'Reduzido',
+     'RF-AUT-001 do TCC1',
+     'Existe limite de tentativas apenas na ativação de conta por código '
+     '(anti-força-bruta). Não há limitação de taxa por usuário ou IP na API. '
+     'Lacuna registrada na aba Lacunas conhecidas dos não funcionais.'),
+
+    ('reCAPTCHA na inscrição e na confirmação', 'Não implementado',
+     'RF-VOL-003 e RF-VOL-009 do TCC1',
+     'A integridade das inscrições é garantida por unicidade no banco, '
+     'atomicidade e aprovação pela organização. A confirmar com a autora.'),
+
+    ('Tópico anônimo e categorias (dúvida, discussão, anúncio)',
+     'Não implementado', 'RF-FOR-004 e RF-FOR-013 do TCC1',
+     'A publicação é sempre identificada e vinculada à disciplina. A '
+     'confirmar com a autora.'),
+
+    ('Menção a pessoas com @nome', 'Não implementado', 'RF-NOT-002 do TCC1',
+     'As notificações cobrem resposta, mensagem, denúncia, pedido de ajuda e '
+     'inscrição. Menção não foi implementada.'),
+
+    ('Cifra em repouso das mensagens (AES-256)', 'Não implementado',
+     'RF-FOR-018, RF-FOR-019 e RF-FOR-020 do TCC1',
+     'As mensagens ficam em texto no banco. A proteção é por controle de '
+     'acesso e participação na conversa (RNF-PRI-001). Lacuna registrada na '
+     'aba Lacunas conhecidas dos não funcionais.'),
+
+    ('Chat aluno-professor com sub-chats por dúvida', 'Substituído',
+     'RF-FOR-019 do TCC1',
+     'Substituído pelo encaminhamento seletivo do pedido de ajuda '
+     '(RF-COL-011 a RF-COL-013), que preserva a privacidade da conversa do '
+     'grupo.'),
+
+    ('Chat monitor-professor', 'Incorporado', 'RF-FOR-018 do TCC1',
+     'Implementado como canal da monitoria por disciplina, com arquivamento '
+     'ao fim da monitoria (RF-COL-019 e RF-COL-020).'),
+
+    ('Grupos de trabalho com período e encerramento automático', 'Reformulado',
+     'RF-FOR-020 e RF-FOR-021 do TCC1',
+     'Passou a ser o módulo de trabalhos em grupo, com prazo de entrega, '
+     'formação por escolha ou sorteio e conversa por grupo (RF-COL-001 a '
+     'RF-COL-010).'),
+
+    ('Upload de vídeo e geocodificação das oportunidades', 'Reduzido',
+     'RF-VOL-002 e RF-VOL-005 do TCC1',
+     'A oportunidade tem imagem de capa e local em texto livre. Não há vídeo '
+     'nem coordenadas.'),
+
+    ('Busca unificada de usuários, tópicos e oportunidades', 'Reduzido',
+     'RF-PRF-006 do TCC1',
+     'A busca atende ao fórum (RF-FOR-019). A localização de pessoas é '
+     'restrita a quem gere papéis (RF-AUT-009).'),
+]
+
+
+# ---------------------------------------------------------------------------
+# Lacunas conhecidas nos requisitos nao funcionais
+#
+# O que o sistema ainda nao cumpre. Fica registrado em vez de omitido: uma
+# lacuna declarada e uma informacao, uma lacuna escondida e um risco.
+# ---------------------------------------------------------------------------
+
+LACUNAS = [
+    ('Limitação de taxa de requisições', 'Não implementada',
+     'A API não restringe a frequência de chamadas por usuário ou IP.',
+     'Só há limite de tentativas na ativação por código (RNF-SEG-014). Seria '
+     'a evolução natural antes de abrir a plataforma a todo o campus.'),
+
+    ('Cifra em repouso das mensagens do chat', 'Não implementada',
+     'As mensagens ficam em texto no banco de dados.',
+     'A proteção é por controle de acesso e participação (RNF-PRI-001). O '
+     'TCC1 previa AES-256.'),
+
+    ('HSTS com validade curta', 'Cautela deliberada',
+     'O padrão é de 3600 segundos.',
+     'O comentário do código explica que prazo longo com certificado mal '
+     'configurado deixaria o site inacessível até vencer. A recomendação é '
+     'elevar a 31536000 quando a implantação estabilizar.'),
+
+    ('Teste de carga e dimensionamento', 'Não realizado',
+     'Os requisitos de desempenho se apoiam em decisões de projeto (índices, '
+     'paginação, consultas), sem medição sob carga.',
+     'A implantação gratuita adormece por inatividade, o que aumenta a '
+     'latência da primeira requisição.'),
 ]
 
 
@@ -1225,7 +1485,8 @@ def gerar_funcionais():
         'H',
         'Levantamento a partir do sistema implementado, e não do planejamento. '
         'As diferenças em relação ao TCC1 estão registradas na aba '
-        'Divergências TCC1, com a justificativa de cada uma.',
+        'Divergências TCC1, com a justificativa de cada uma. Revisado em '
+        '24/10/2026 contra o código (v1.1.2).',
     )
 
     livro.save(DESTINO_RF)
@@ -1246,6 +1507,14 @@ def gerar_nao_funcionais():
          for numero, dados in enumerate(NAO_FUNCIONAIS, start=1)],
     )
 
+    aba_lacunas = livro.create_sheet('Lacunas conhecidas')
+    escrever_aba(
+        aba_lacunas,
+        ['ID', 'Lacuna', 'Situação', 'Efeito', 'Observação'],
+        [6, 36, 20, 52, 70],
+        [(numero, *dados) for numero, dados in enumerate(LACUNAS, start=1)],
+    )
+
     escrever_resumo(
         livro,
         'Requisitos Não-Funcionais — Plataforma UNIFEI',
@@ -1255,7 +1524,8 @@ def gerar_nao_funcionais():
         'Levantamento a partir do sistema implementado. Agrupados em oito '
         'categorias: segurança, privacidade, integridade, desempenho, '
         'confiabilidade, usabilidade e acessibilidade, manutenibilidade e '
-        'portabilidade.',
+        'portabilidade. Revisado em 24/10/2026 contra o código (v1.1.2). O '
+        'que o sistema ainda não cumpre está na aba Lacunas conhecidas.',
     )
 
     livro.save(DESTINO_RNF)
