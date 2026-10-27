@@ -57,7 +57,6 @@ plataforma-unifei-revisao/
 ├── frontend/          Aplicação React + TypeScript (Vite)
 ├── deploy/            Script de inicialização e guia de implantação
 ├── docs/              Requisitos, matriz curricular (PPC) e roteiro de avaliação
-├── artigo/            Texto do TCC em LaTeX
 ├── Dockerfile         Imagem única (build do React + Django/Daphne)
 └── render.yaml        Plano de implantação no Render
 ```
@@ -169,8 +168,8 @@ cd frontend && npx tsc -b        # verificação de tipos do frontend
 | Trabalhos em grupo e monitoria | Pronto | WebSocket com conversa em tempo real |
 | Voluntariado | Pronto | Certificação automática |
 | Testes automatizados | 230 testes | Cobrem permissões, privacidade e regras de negócio |
-| Avaliação com usuários | Em andamento | Pesquisa exploratória com monitores e alunos (Seção 4.3 do artigo) |
-| Artigo | Em conclusão | Falta a Seção 4.3, as Conclusões e atualizar o Resumo |
+| Avaliação com usuários | Concluída | Pesquisa exploratória com 14 alunos e 6 monitores |
+| Artigo | Concluído | Mantido fora do repositório, no modelo LaTeX do IMC/UNIFEI |
 
 **Limitações conhecidas:** não há redefinição de senha por e-mail, nem limitação de taxa de requisições na API, e as mensagens do chat ficam em texto no banco (a proteção é por controle de acesso). A lista completa está na aba `Lacunas conhecidas` da planilha de requisitos não funcionais.
 
@@ -183,7 +182,6 @@ cd frontend && npx tsc -b        # verificação de tipos do frontend
 - [`docs/avaliacao-usabilidade.md`](docs/avaliacao-usabilidade.md): roteiro original de avaliação com usuários
 - [`docs/formulario-participante.md`](docs/formulario-participante.md): formulário do participante
 - [`docs/ppc-cco.txt`](docs/ppc-cco.txt): ementário do curso usado para importar a matriz curricular
-- [`artigo/`](artigo/): texto do TCC em LaTeX, no modelo do IMC/UNIFEI
 - [`deploy/LEIA-ME.md`](deploy/LEIA-ME.md): implantação gratuita (Render, Neon e R2)
 - [`CHANGELOG.md`](CHANGELOG.md): histórico de versões
 - Documentação da API em `/api/docs/` (Swagger) e `/api/redoc/`, com o servidor rodando
