@@ -315,8 +315,10 @@ FUNCIONAIS = [
      'máximo, prazo e forma de montagem.',
      'POST /api/colaboracao/trabalhos/. Exige que a pessoa lecione a '
      'disciplina — a coordenação não passa nesta verificação, porque '
-     'supervisionar não é participar da turma.',
-     'Professor/Monitor', 'CRÍTICA'),
+     'supervisionar não é participar da turma. O monitor também não passa: '
+     'ele costuma ser aluno de período próximo, e criar a atividade pela qual '
+     'os colegas serão avaliados inverteria a relação da monitoria.',
+     'Professor', 'CRÍTICA'),
 
     ('RF-COL-002', 'Anexar material ao enunciado', 'Colaboração',
      'Professor anexa a especificação, a base de dados e o esqueleto de código '
@@ -330,14 +332,15 @@ FUNCIONAIS = [
     ('RF-COL-003', 'Criar grupos vazios', 'Colaboração',
      'Sistema gera os grupos previstos para que os alunos escolham onde entrar.',
      'POST /api/colaboracao/trabalhos/{id}/criar-grupos/. Cria a conversa '
-     'privada de cada grupo junto.',
-     'Professor/Monitor', 'ESSENCIAL'),
+     'privada de cada grupo junto. Restrito ao professor da disciplina.',
+     'Professor', 'ESSENCIAL'),
 
     ('RF-COL-004', 'Sortear a composição dos grupos', 'Colaboração',
      'Distribuição aleatória dos matriculados entre os grupos.',
      'POST /api/colaboracao/trabalhos/{id}/sortear/. Respeita o tamanho máximo '
-     'e sincroniza os participantes das conversas.',
-     'Professor/Monitor', 'IMPORTANTE'),
+     'e sincroniza os participantes das conversas. Restrito ao professor da '
+     'disciplina.',
+     'Professor', 'IMPORTANTE'),
 
     ('RF-COL-005', 'Entrar em grupo', 'Colaboração',
      'Aluno escolhe o grupo de que quer participar.',
